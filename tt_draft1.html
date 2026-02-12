@@ -1,0 +1,211 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Google Sheets Todo</title>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: 2rem auto; }
+        .task-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; }
+        button { cursor: pointer; }
+        table{
+              border: 2px solid white;
+              margin: auto;
+              width: 60%;
+              border-color: white;
+             }
+
+       frame{
+               height: 350px;
+               overflow: auto;   /* adds scroll bar */
+             }
+          td{
+              padding:8px;
+             }
+    </style>
+</head>
+<body bgcolor="#097969" text="white">
+
+<h2 align="center">Hospital Patient Registration Form</h2>
+
+<form>
+<div>
+<table>
+
+<tr>
+<td> <input type="text" id="taskInput" placeholder="Name"></td>
+<div id="loading" style="display:none; color:gray;">Processing...</div>
+    <div id="taskList"></div>
+<td>Name :</td>
+<td><input type="text" name="name"></td>
+</tr>
+
+<tr>
+<td>Age :</td>
+<td><input type="number" name="age"></td>
+</tr>
+
+<tr>
+<td>Gender :</td>
+<td>
+<input type="radio" name="gender"> Male
+<input type="radio" name="gender"> Female
+<input type="radio" name="gender"> Other
+</td>
+</tr>
+
+<tr>
+<td>Nationality :</td>
+<td><input type="text" name="nationality"></td>
+</tr>
+
+<tr>
+<td>Blood Group :</td>
+<td>
+<select name="bloodgroup">
+<option>Select</option>
+<option>A+</option>
+<option>A-</option>
+<option>B+</option>
+<option>B-</option>
+<option>AB+</option>
+<option>AB-</option>
+<option>O+</option>
+<option>O-</option>
+</select>
+</td>
+</tr>
+
+<tr>
+<td>Address :</td>
+<td><textarea name="address" rows="3" cols="30"></textarea></td>
+</tr>
+
+<tr>
+<td>City :</td>
+<td><input type="text" name="city"></td>
+</tr>
+
+<tr>
+<td>State :</td>
+<td><input type="text" name="state"></td>
+</tr>
+
+<tr>
+<td>Observation :</td>
+<td><textarea name="observation" rows="3" cols="30"></textarea></td>
+</tr>
+
+<tr>
+<td>Suggested Treatment :</td>
+<td><textarea name="treatment" rows="3" cols="30"></textarea></td>
+</tr>
+
+<tr>
+<td>Special Remark :</td>
+<td><textarea name="remark" rows="3" cols="30"></textarea></td>
+</tr>
+
+<tr>
+<td>Precautions Advised :</td>
+<td><textarea name="precautions" rows="3" cols="30"></textarea></td>
+</tr>
+
+<tr>
+<td>Prescription :</td>
+<td><textarea name="prescription" rows="3" cols="30"></textarea></td>
+</tr>
+
+<tr>
+<td colspan="2" align="center">
+<button onclick="createTask()">Submit</button>
+
+<input type="reset" value="Reset">
+</td>
+</tr>
+
+</table>
+</div>
+</form>
+
+
+   
+   
+    
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycby0UH6DDNTL3voNI4QiAqUbaOeyrm6quexgy9Gu-q_dKtX8TOKE_qfIvwi737rBd423/exec'; // <--- PASTE YOUR URL HERE
+
+        // --- 1. READ (Load Tasks) ---
+        async function loadTasks() {
+            toggleLoading(true);
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            const list = document.getElementById('taskList');
+            list.innerHTML = ''; // Clear current list
+
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'task-item';
+                div.innerHTML = `
+                    <span>${item.task} (${item.status})</span>
+                    <div>
+                        <button onclick="updateTask('${item.id}', 'Done')">✔</button>
+                        <button onclick="deleteTask('${item.id}')">❌</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            toggleLoading(false);
+        }
+
+        // --- 2. CREATE ---
+        function createTask() {
+            const input = document.getElementById('taskInput');
+            const text = input.value;
+            if (!text) return;
+
+            sendRequest({ action: 'create', task: text }).then(() => {
+                input.value = '';
+                loadTasks();
+            });
+        }
+
+        // --- 3. UPDATE ---
+        function updateTask(id, newStatus) {
+            sendRequest({ action: 'update', id: id, status: newStatus }).then(() => loadTasks());
+        }
+
+        // --- 4. DELETE ---
+        function deleteTask(id) {
+            if(!confirm("Delete this task?")) return;
+            sendRequest({ action: 'delete', id: id }).then(() => loadTasks());
+        }
+
+        // --- Helper Function for POST requests ---
+        // Google Apps Script requires a specific POST setup to avoid CORS errors
+        async function sendRequest(data) {
+            toggleLoading(true);
+            
+            // We use 'no-cors' mode usually, but standard POST works if 
+            // the GAS script returns strict JSON and we handle the redirect.
+            // For simplicity, we use text/plain to avoid preflight CORS checks.
+            await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            
+            toggleLoading(false);
+        }
+
+        function toggleLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        // Load on startup
+        loadTasks();
+    </script>
+</body>
+</html>
